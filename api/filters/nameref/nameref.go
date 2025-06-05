@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/kio"
 	"sigs.k8s.io/kustomize/kyaml/resid"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
+	"slices"
 )
 
 // Filter updates a name references.
@@ -39,6 +40,8 @@ type Filter struct {
 
 	// Set of resources to scan to find the ReferralTarget.
 	ReferralCandidates resmap.ResMap
+
+	AllowedNamespace []string
 }
 
 // At time of writing, in practice this is called with a slice with only
@@ -290,7 +293,7 @@ func prefixSuffixEquals(other resource.ResCtx, allowEmpty bool) sieveFunc {
 	}
 }
 
-func (f Filter) sameCurrentNamespaceAsReferrer() sieveFunc {
+func (f Filter) namespaceCurrentOrAllowed() sieveFunc {
 	referrerCurId := f.Referrer.CurId()
 	if referrerCurId.IsClusterScoped() {
 		// If the referrer is cluster-scoped, let anything through.
@@ -307,7 +310,11 @@ func (f Filter) sameCurrentNamespaceAsReferrer() sieveFunc {
 			// can reference them.
 			return true
 		}
-		return referrerCurId.IsNsEquals(r.CurId())
+		if referrerCurId.IsNsEquals(r.CurId()) {
+			return true
+		}
+
+		return slices.Contains(f.AllowedNamespace, r.CurId().Namespace)
 	}
 }
 
@@ -321,7 +328,7 @@ func (f Filter) selectReferral(
 	candidates = doSieve(candidates, previousNameMatches(oldName))
 	candidates = doSieve(candidates, previousIdSelectedByGvk(&f.ReferralTarget))
 	candidates = doSieve(candidates, f.roleRefFilter())
-	candidates = doSieve(candidates, f.sameCurrentNamespaceAsReferrer())
+	candidates = doSieve(candidates, f.namespaceCurrentOrAllowed())
 	if len(candidates) == 1 {
 		return candidates[0], nil
 	}

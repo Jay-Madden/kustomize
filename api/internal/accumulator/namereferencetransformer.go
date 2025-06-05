@@ -52,13 +52,13 @@ func (t *nameReferenceTransformer) Transform(m resmap.ResMap) error {
 	fMap := t.determineFilters(m.Resources())
 	debug(fMap)
 	for r, fList := range fMap {
-		c, err := m.SubsetThatCouldBeReferencedByResource(r)
-		if err != nil {
-			return err
-		}
+		// c, err := m.SubsetThatCouldBeReferencedByResource(r)
+		// if err != nil {
+		// 	return err
+		// }
 		for _, f := range fList {
 			f.Referrer = r
-			f.ReferralCandidates = c
+			f.ReferralCandidates = m
 			if err := f.Referrer.ApplyFilter(f); err != nil {
 				return err
 			}
@@ -138,6 +138,8 @@ func (t *nameReferenceTransformer) determineFilters(
 							// Specification of object class to read from.
 							// Always read from metadata/name field.
 							ReferralTarget: backReference.Gvk,
+
+							AllowedNamespace: backReference.AllowedNs,
 						})
 					}
 				}

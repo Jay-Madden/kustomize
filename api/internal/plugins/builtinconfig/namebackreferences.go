@@ -48,6 +48,7 @@ type NameBackReferences struct {
 	// This will, however, break anyone using a custom config.
 	Referrers types.FsSlice `json:"fieldSpecs,omitempty" yaml:"fieldSpecs,omitempty"`
 
+	AllowedNs []string
 	// Note: If any new pointer based members are added, DeepCopy needs to be updated
 }
 
@@ -74,6 +75,7 @@ func (s nbrSlice) DeepCopy() nbrSlice {
 	copy(ret, s)
 	for i, slice := range ret {
 		ret[i].Referrers = slice.Referrers.DeepCopy()
+		copy(ret[i].AllowedNs, slice.AllowedNs)
 	}
 
 	return ret
